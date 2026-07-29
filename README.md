@@ -83,4 +83,4 @@ Beyond v4: response comparison across runs, browser comparison views, PR check a
 
 ## License
 
-TBD
+MIT
