@@ -6,7 +6,7 @@ test_results, failure_artifacts. Built one at a time — this is step 1.
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -25,4 +25,19 @@ class TestSuite(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+class TestCase(Base):
+    """A single named test within a suite, e.g. 'test_login_with_valid_credentials'.
+
+    Identity here is (suite_id, name) — the same test name could theoretically
+    exist in two different suites and those are different tests.
+    """
+
+    __tablename__ = "test_cases"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    suite_id: Mapped[int] = mapped_column(ForeignKey("test_suites.id"))
+    name: Mapped[str] = mapped_column(String(255))
+    file_path: Mapped[str] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
