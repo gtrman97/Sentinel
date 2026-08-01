@@ -41,3 +41,19 @@ class TestCase(Base):
     name: Mapped[str] = mapped_column(String(255))
     file_path: Mapped[str] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+class TestRun(Base):
+    """One execution of a suite — i.e. one JUnit XML import.
+
+    All test_results from a single import share one test_run. This is what
+    lets us compute flakiness across runs: same test_case, different test_run,
+    different outcome.
+    """
+
+    __tablename__ = "test_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    suite_id: Mapped[int] = mapped_column(ForeignKey("test_suites.id"))
+    run_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    environment: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    commit_sha: Mapped[str | None] = mapped_column(String(40), nullable=True)
