@@ -4,9 +4,10 @@ Five tables per the project plan: test_suites, test_cases, test_runs,
 test_results, failure_artifacts. Built one at a time — this is step 1.
 """
 
+import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -57,3 +58,29 @@ class TestRun(Base):
     run_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     environment: Mapped[str | None] = mapped_column(String(100), nullable=True)
     commit_sha: Mapped[str | None] = mapped_column(String(40), nullable=True)
+
+class ResultStatus(enum.Enum):
+    """Possible outcomes for a single test result, per JUnit XML semantics."""
+
+    PASSED = "passed"
+    FAILED = "failed"
+    ERROR = "error"
+    SKIPPED = "skipped"
+
+
+class TestResult(Base):
+    """The outcome of one test_case within one test_run.
+
+    This is the row the flakiness score is actually computed from:
+    for a given test_case, look at its test_results across many test_runs
+    and count the status transitions.
+    """
+
+    __tablename__ = "test_results"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    test_case_id: Mapped[int] = mapped_column(ForeignKey("test_cases.id"))
+    test_run_id: Mapped[int] = mapped_column(ForeignKey("test_runs.id"))
+    status: Mapped[ResultStatus] = mapped_column(Enum(ResultStatus))
+    duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String(2000), nullable=True)
