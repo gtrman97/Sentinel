@@ -84,3 +84,19 @@ class TestResult(Base):
     status: Mapped[ResultStatus] = mapped_column(Enum(ResultStatus))
     duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
     error_message: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+
+class FailureArtifact(Base):
+    """A reference to evidence captured for a failed/errored test_result.
+
+    Stores a path or URL, not the file itself — so moving from local disk
+    storage (v1/v2) to something like S3 later is a config change, not a
+    schema change.
+    """
+
+    __tablename__ = "failure_artifacts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    test_result_id: Mapped[int] = mapped_column(ForeignKey("test_results.id"))
+    artifact_type: Mapped[str] = mapped_column(String(50))
+    path_or_url: Mapped[str] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
