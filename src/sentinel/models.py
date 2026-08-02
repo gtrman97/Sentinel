@@ -6,6 +6,7 @@ test_results, failure_artifacts. Built one at a time — this is step 1.
 
 import enum
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import DateTime, Enum, Float, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -56,8 +57,8 @@ class TestRun(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     suite_id: Mapped[int] = mapped_column(ForeignKey("test_suites.id"))
     run_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    environment: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    commit_sha: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    environment: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    commit_sha: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
 
 class ResultStatus(enum.Enum):
     """Possible outcomes for a single test result, per JUnit XML semantics."""
@@ -82,8 +83,8 @@ class TestResult(Base):
     test_case_id: Mapped[int] = mapped_column(ForeignKey("test_cases.id"))
     test_run_id: Mapped[int] = mapped_column(ForeignKey("test_runs.id"))
     status: Mapped[ResultStatus] = mapped_column(Enum(ResultStatus))
-    duration_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
-    error_message: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    duration_seconds: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(String(2000), nullable=True)
 
 class FailureArtifact(Base):
     """A reference to evidence captured for a failed/errored test_result.
