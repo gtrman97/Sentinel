@@ -9,6 +9,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from sqlalchemy.orm import Session
+
+from sentinel.db import get_session
+from sentinel.models import ResultStatus, TestCase, TestResult, TestRun, TestSuite
 
 @dataclass
 class ParsedResult:
@@ -58,8 +62,63 @@ def parse_junit_xml(xml_path: Path) -> list[ParsedResult]:
 
     return results
 
+SUITE_NAME = "sentinel_demo_suite"  # v1 simplification: one suite, hardcoded
+
+
+def get_or_create_suite(session: Session, name: str) -> TestSuite:
+    suite = session.query(TestSuite).filter_by(name=name).first()
+    if suite is None:
+        suite = TestSuite(name=name)
+        session.add(suite)
+        session.flush()  # assigns suite.id without committing yet
+    return suite
+
+
+def get_or_create_test_case(session: Session, suite: TestSuite, result: ParsedResult) -> TestCase:
+    test_case = (
+        session.query(TestCase)
+        .filter_by(suite_id=suite.id, name=result.name)
+        .first()
+    )
+    if test_case is None:
+        file_path = result.classname.replace(".", "/") + ".py"
+        test_case = TestCase(suite_id=suite.id, name=result.name, file_path=file_path)
+        session.add(test_case)
+        session.flush()
+    return test_case
+
+
+def import_results(xml_path: Path) -> TestRun:
+    """Parse a JUnit XML report and write it into the database.
+
+    Every call creates one new TestRun (this is what gives us history to
+    score flakiness against) but reuses existing TestSuite/TestCase rows.
+    """
+    parsed_results = parse_junit_xml(xml_path)
+
+    with get_session() as session:
+        suite = get_or_create_suite(session, SUITE_NAME)
+
+        test_run = TestRun(suite_id=suite.id)
+        session.add(test_run)
+        session.flush()  # assigns test_run.id
+
+        for result in parsed_results:
+            test_case = get_or_create_test_case(session, suite, result)
+            test_result = TestResult(
+                test_case_id=test_case.id,
+                test_run_id=test_run.id,
+                status=ResultStatus(result.status),
+                duration_seconds=result.duration_seconds,
+                error_message=result.error_message,
+            )
+            session.add(test_result)
+
+        session.commit()
+
+    return test_run
+
 
 if __name__ == "__main__":
-    parsed = parse_junit_xml(Path("reports/junit.xml"))
-    for result in parsed:
-        print(result)
+    run = import_results(Path("reports/junit.xml"))
+    print(f"Imported TestRun id={run.id}")
