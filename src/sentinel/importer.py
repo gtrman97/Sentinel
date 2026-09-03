@@ -88,11 +88,14 @@ def get_or_create_test_case(session: Session, suite: TestSuite, result: ParsedRe
     return test_case
 
 
-def import_results(xml_path: Path) -> TestRun:
+def import_results(xml_path: Path) -> int:
     """Parse a JUnit XML report and write it into the database.
 
     Every call creates one new TestRun (this is what gives us history to
     score flakiness against) but reuses existing TestSuite/TestCase rows.
+
+    Returns the new TestRun's id, not the ORM object itself — the object
+    would be unusable once the session below closes.
     """
     parsed_results = parse_junit_xml(xml_path)
 
@@ -115,10 +118,11 @@ def import_results(xml_path: Path) -> TestRun:
             session.add(test_result)
 
         session.commit()
+        run_id = test_run.id  # grab it now, while still inside the session
 
-    return test_run
+    return run_id
 
 
 if __name__ == "__main__":
-    run = import_results(Path("reports/junit.xml"))
-    print(f"Imported TestRun id={run.id}")
+    run_id = import_results(Path("reports/junit.xml"))
+    print(f"Imported TestRun id={run_id}")
