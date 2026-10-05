@@ -1,3 +1,4 @@
 SQLAlchemy>=2.0,<3.0
 pytest>=7.4,<8.0
 selenium>=4.15,<5.0
+Jinja2>=3.1,<4.0
