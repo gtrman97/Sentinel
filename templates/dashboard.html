@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Sentinel — Test Dashboard</title>
+</head>
+<body>
+    <h1>Sentinel — Test Dashboard</h1>
+    <p>{{ tests|length }} test(s) tracked.</p>
+
+    <table border="1" cellpadding="6">
+        <thead>
+            <tr>
+                <th>Test Name</th>
+                <th>Total Runs</th>
+                <th>Pass Rate</th>
+                <th>Flakiness Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in tests %}
+            <tr>
+                <td>{{ test.name }}</td>
+                <td>{{ test.total_runs }}</td>
+                <td>{{ "%.0f"|format(test.pass_rate * 100) }}%</td>
+                <td>
+                    {% if test.flakiness_score is none %}
+                        Not enough data yet
+                    {% else %}
+                        {{ "%.2f"|format(test.flakiness_score) }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
